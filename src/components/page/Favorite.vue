@@ -2,7 +2,7 @@
     <div class="fav">
         <el-row>
             <el-col :span="7" class="favorite">
-                <el-tabs v-model="editableTabsValue" editable @edit="handleTabsEdit">
+                <el-tabs v-model="editableTabsValue" editable @edit="handleTabsEdit" @tab-click="activeChange">
                     <el-tab-pane :key="item.name" v-for="(item, index) in editableTabs" :label="item.title" :name="item.name">
                         <el-table v-bind:data="favData[favIndex-1]" border style="width:100%" height="500">
                             <el-table-column prop="goodsName" label="商品" header-align="center" align="center"></el-table-column>
@@ -24,7 +24,7 @@
                     <el-tabs type="border-card" height="500">
                         <el-tab-pane label="汉堡">
                             <ul class='cookList'>
-                                <li v-for="goods in type0Goods">
+                                <li v-for="goods in type0Goods" @click="addFavList(goods)">
                                     <span class="foodImg"><img :src="goods.goodsImg" width="100%"></span>
                                     <span class="foodName">{{goods.goodsName}}</span>
                                     <span class="foodPrice">￥{{goods.price}}元</span>
@@ -52,9 +52,9 @@ export default {
   name: "pos",
   data() {
     return {
-      favIndex:1,
-      editableTabsValue: "2",
-      favData:[[]],
+      favIndex: 0,
+      editableTabsValue: "0",
+      favData: [],
       type0Goods: [
         {
           goodsId: 1,
@@ -123,23 +123,29 @@ export default {
   },
   methods: {
     handleTabsEdit(targetName, action) {
+      //console.log(targetName);
       if (action === "add") {
         let newTabName = ++this.tabIndex + "";
         this.editableTabs.push({
-          title: "自定义套餐"+this.tabIndex,
-          name: newTabName,
+          title: "自定义套餐" + this.tabIndex,
+          name: newTabName
         });
         this.editableTabsValue = newTabName;
+        this.favData.push([]);
+        this.favIndex = this.favData.length;
       }
       if (action === "remove") {
         let tabs = this.editableTabs;
         let activeName = this.editableTabsValue;
+        this.favData.splice(targetName - 1, 1,[]);
         if (activeName === targetName) {
           tabs.forEach((tab, index) => {
             if (tab.name === targetName) {
               let nextTab = tabs[index + 1] || tabs[index - 1];
               if (nextTab) {
                 activeName = nextTab.name;
+                this.favIndex = nextTab.name;
+                console.log(`this is ${this.favIndex}`);
               }
             }
           });
@@ -147,18 +153,51 @@ export default {
         this.editableTabsValue = activeName;
         this.editableTabs = tabs.filter(tab => tab.name !== targetName);
       }
+    },
+    activeChange(tab) {
+      this.favIndex = tab.name;
+      console.log(tab.name);
+    },
+    addFavList(goods) {
+      let isHave = false;
+      //判断是否这个商品已经存在于订单列表
+      for (let i = 0; i < this.favData[this.favIndex - 1].length; i++) {
+        //console.log(this.tableData[i].goodsId);
+        if (this.favData[this.favIndex - 1][i].goodsId == goods.goodsId) {
+          isHave = true; //存在
+        }
+      }
+      //根据isHave的值判断订单列表中是否已经有此商品
+      if (isHave) {
+        //存在就进行数量添加
+        let arr = this.favData[this.favIndex - 1].filter(
+          o => o.goodsId == goods.goodsId
+        );
+        arr[0].count++;
+        //console.log(arr);
+      } else {
+        //不存在就推入数组
+        let newGoods = {
+          goodsId: goods.goodsId,
+          goodsName: goods.goodsName,
+          price: goods.price,
+          count: 1
+        };
+        this.favData[this.favIndex - 1].push(newGoods);
+      }
     }
   },
   mounted: function() {
     let windowH = document.body.clientHeight;
-    document.getElementsByClassName("favorite")[0].style.height = windowH + "px";
+    document.getElementsByClassName("favorite")[0].style.height =
+      windowH + "px";
   }
 };
 </script>
 <style scoped>
-.favorite{
-    border-right: 1px solid #d7dde4;
-    padding: 5px;
+.favorite {
+  border-right: 1px solid #d7dde4;
+  padding: 5px;
 }
 * {
   margin: 0;
@@ -193,12 +232,12 @@ export default {
 .o-price {
   color: #58b7ff;
 }
-.goods-type{
-    clear: both;
+.goods-type {
+  clear: both;
 }
-.cookList{
-    padding-left: 40px;
-    padding-bottom: 1000px
+.cookList {
+  padding-left: 40px;
+  padding-bottom: 1000px;
 }
 .cookList li {
   list-style: none;

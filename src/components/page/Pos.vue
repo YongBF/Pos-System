@@ -3,38 +3,38 @@
         <el-row>
             <el-col :span="7" class="order">
                 <el-tabs type="border-card" @tab-click="tabclick">
-                    <el-tab-pane label="点餐" align="right">
-                        <el-table :data="tableData" border style="width:100%" height="500">
+                    <el-tab-pane label="点餐">
+                        <el-table :data="tableData" border show-summary style="width:100%" height="500">
                             <el-table-column prop="goodsName" label="商品" header-align="center" align="center"></el-table-column>
                             <el-table-column prop="count" label="数量" width="60" header-align="center" align="center"></el-table-column>
                             <el-table-column prop="price" label="价格" width="60" header-align="center" align="center"></el-table-column>
                             <el-table-column label="操作" width="100" header-align="center" align="center">
                                 <template slot-scope="scope">
-                                    <el-button type="text" size="small">删除</el-button>
+                                    <el-button type="text" size="small" @click="delOrderList(scope.row)">删除</el-button>
                                     <el-button type="text" size="small" @click="addOrderList(scope.row)">增加</el-button>
                                 </template>
                             </el-table-column>
                         </el-table>
                         <div class="btns">
-                            <el-button type="success" round>下单</el-button>
-                            <el-button type="danger" round>删除</el-button>
+                            <el-button type="success" round @click="checkout">下单</el-button>
+                            <el-button type="danger" round @click="delAllGoods">删除</el-button>
                         </div>
                     </el-tab-pane>
                     <el-tab-pane label="外卖">
-                        <el-table :data="takeoutData" border style="width:100%" height="500">
+                        <el-table :data="takeoutData" border show-summary style="width:100%" height="500">
                             <el-table-column prop="goodsName" label="商品" header-align="center" align="center"></el-table-column>
                             <el-table-column prop="count" label="数量" width="60" header-align="center" align="center"></el-table-column>
                             <el-table-column prop="price" label="价格" width="60" header-align="center" align="center"></el-table-column>
                             <el-table-column label="操作" width="100" header-align="center" align="center">
                                 <template slot-scope="scope">
-                                    <el-button type="text" size="small">删除</el-button>
+                                    <el-button type="text" size="small" @click="delOrderList(scope.row)">删除</el-button>
                                     <el-button type="text" size="small" @click="addOrderList(scope.row)">增加</el-button>
                                 </template>
                             </el-table-column>
                         </el-table>
                         <div class="btns">
-                            <el-button type="success" round>下单</el-button>
-                            <el-button type="danger" round>删除</el-button>
+                            <el-button type="success" round @click="checkout">下单</el-button>
+                            <el-button type="danger" round @click="delAllGoods">删除</el-button>
                         </div>
                     </el-tab-pane>
                 </el-tabs>
@@ -208,8 +208,6 @@ export default {
   },
   methods:{
       addOrderList(goods){
-            this.totalCount=0; //汇总数量清0
-            this.totalMoney=0;
             let isHave=false;
             //判断是否这个商品已经存在于订单列表
             for (let i=0; i<(this.tab==1?this.tableData.length:this.takeoutData.length);i++){
@@ -223,21 +221,33 @@ export default {
                 //存在就进行数量添加
                  let arr = (this.tab==1?this.tableData:this.takeoutData).filter(o =>o.goodsId == goods.goodsId);
                  arr[0].count++;
+                 arr[0].price+=goods.price;
                  //console.log(arr);
             }else{
                 //不存在就推入数组
                 let newGoods={goodsId:goods.goodsId,goodsName:goods.goodsName,price:goods.price,count:1};
                 (this.tab==1?this.tableData:this.takeoutData).push(newGoods);
-            }
-            //进行数量和价格的汇总计算
-            (this.tab==1?this.tableData:this.takeoutData).forEach((element) => {
-                this.totalCount+=element.count;
-                this.totalMoney=this.totalMoney+(element.price*element.count);   
-            });
-           
+            }         
       },
+      delOrderList(goods){
+          console.log(this.tab+"---"+this.tableData.length);
+          this.tab==1?this.tableData = (this.tab==1?this.tableData:this.takeoutData).filter(o=>o.goodsId!=goods.goodsId):this.takeoutData = (this.tab==1?this.tableData:this.takeoutData).filter(o=>o.goodsId!=goods.goodsId);
+      },
+      delAllGoods(){
+          this.tab==1?this.tableData=[]:this.takeoutData = [];
+      },
+      checkout() {
+        if ((this.tab==1?this.tableData:this.takeoutData).length!=0) {
+            this.tab==1?this.tableData = []:this.takeoutData = [];
+            this.$message({
+                message: '结账成功，感谢你又为店里出了一份力!',
+                type: 'success'
+            });
+        }else{
+            this.$message.error('不能空结。老板了解你急切的心情！');
+        }
+        },
       tabclick(target){
-          console.log(target);
           if(target.label==="点餐"){
               this.tab=1;
           }else{
@@ -282,12 +292,12 @@ export default {
 .o-price {
   color: #58b7ff;
 }
-.goods-type{
-    clear: both;
+.goods-type {
+  clear: both;
 }
-.cookList{
-    padding-left: 40px;
-    padding-bottom: 1000px
+.cookList {
+  padding-left: 40px;
+  padding-bottom: 1000px;
 }
 .cookList li {
   list-style: none;
